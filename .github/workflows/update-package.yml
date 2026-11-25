@@ -1,0 +1,65 @@
+name: update-package
+
+# Triggered by a product repository after it publishes a release:
+#   repository_dispatch { event_type: release-published,
+#                         client_payload: { product: doscapsule, tag: 20261125-3 } }
+on:
+  repository_dispatch:
+    types: [release-published]
+  workflow_dispatch:
+    inputs:
+      product:
+        description: "Product slug (products/<slug>.env)"
+        required: true
+      tag:
+        description: "Release tag"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-package
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      PRODUCT: ${{ github.event.client_payload.product || github.event.inputs.product }}
+      TAG: ${{ github.event.client_payload.tag || github.event.inputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: true
+
+      - name: Validate payload
+        run: |
+          if [[ -z "$PRODUCT" || -z "$TAG" ]]; then
+            echo "error: missing product or tag" >&2
+            exit 1
+          fi
+          if [[ ! "$PRODUCT" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+            echo "error: invalid product: $PRODUCT" >&2
+            exit 1
+          fi
+          if [[ ! "$TAG" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "error: invalid tag: $TAG" >&2
+            exit 1
+          fi
+
+      - name: Update formula and manifest
+        run: bash scripts/update-package.sh "$PRODUCT" "$TAG"
+
+      - name: Commit and push
+        run: |
+          if git diff --quiet; then
+            echo "already up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula bucket
+          git commit -m "packaging: bump ${PRODUCT} to ${TAG} [skip ci]"
+          git push
