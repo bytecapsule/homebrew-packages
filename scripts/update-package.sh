@@ -10,14 +10,21 @@ PRODUCT="${1:?usage: scripts/update-package.sh <product> <tag>}"
 TAG="${2:?usage: scripts/update-package.sh <product> <tag>}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# The payload comes from another repository; keep both to simple slugs before
+# using them in a path or URL.
+if [[ ! "$PRODUCT" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+  echo "error: invalid product: $PRODUCT" >&2
+  exit 1
+fi
+if [[ ! "$TAG" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  echo "error: invalid tag: $TAG" >&2
+  exit 1
+fi
+
 CONF="$ROOT/products/${PRODUCT}.env"
 if [[ ! -f "$CONF" ]]; then
   echo "error: unknown product: $PRODUCT (expected $CONF)" >&2
-  exit 1
-fi
-# The payload comes from another repository; keep it to a simple slug.
-if [[ ! "$PRODUCT" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
-  echo "error: invalid product: $PRODUCT" >&2
   exit 1
 fi
 # shellcheck disable=SC1090
