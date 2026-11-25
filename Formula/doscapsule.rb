@@ -6,10 +6,9 @@
 # `dosbox-staging` is a HARD dependency: brew installs it automatically when
 # absent, matching the host architecture.
 #
-# Users: brew tap bytecapsule/doscapsule && brew install doscapsule
-#
-# Maintainers: after publishing a release, run
-#   scripts/update-packaging.sh <tag>
+# Users: brew tap bytecapsule/packages && brew install doscapsule
+# Maintainers: the index is updated automatically on release; manual:
+#   scripts/update-package.sh <product> <tag>
 # to rewrite the tag and both sha256 values below.
 
 class Doscapsule < Formula
